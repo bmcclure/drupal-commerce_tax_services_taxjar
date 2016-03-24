@@ -1,0 +1,65 @@
+<?php
+use TaxJar\Client;
+
+/**
+ * Created by PhpStorm.
+ * User: BMcClure
+ * Date: 3/16/2016
+ * Time: 5:15 PM
+ */
+
+function commerce_tax_services_taxjar_tax_service_info() {
+  $tax_services = array();
+
+  $tax_services['taxjar'] = array(
+    'name' => t('TaxJar'),
+    'module' => 'commerce_tax_services_taxjar',
+  );
+
+  return $tax_services;
+}
+
+function commerce_tax_services_taxjar_tax_service_calculate($order, $variables) {
+  $api_key = variable_get('commerce_tax_services_taxjar_api_key', false);
+
+  if (!$api_key) {
+    return false;
+  }
+
+  // Build order wrapper.
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+
+  $taxjar = Client::withApiKey($api_key);
+
+  $order_taxes = $taxjar->taxForOrder([
+    'from_country' => $variables['primary_country'],
+    'from_zip' => $variables['primary_zip'],
+    'from_state' => $variables['primary_state'],
+    'to_country' => $variables['country'],
+    'to_zip' => $variables['zip'],
+    'to_state' => $variables['state'],
+    'amount' => $order_wrapper->commerce_order_total->amount->value(),
+    'shipping' => commerce_tax_services_get_shipping_price($order),
+  ]);
+  
+  $sales_tax = array(
+    'amount' => $order_taxes->amount_to_collect,
+    'currency_code' => $variables['currency_code'],
+    'data' => array(),
+  );
+
+  return $sales_tax;
+}
+
+function commerce_tax_services_taxjar_tax_service_admin_options($form, $form_state) {
+  $options = array();
+
+  $options['commerce_tax_services_taxjar_api_key'] = array(
+    '#title' => t('Sales Tax Description'),
+    '#description' => t('The Sales Tax description to be displayed on the order check out form'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('commerce_tax_services_taxjar_api_key', false),
+  );
+
+  return $options;
+}

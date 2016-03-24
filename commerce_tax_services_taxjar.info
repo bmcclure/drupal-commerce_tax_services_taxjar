@@ -1,0 +1,7 @@
+name = TaxJar Tax Service
+description = Extends Commerce Tax Services providing support for TaxJar
+package = Commerce (Tax Services)
+core = 7.x
+
+dependencies[] = commerce
+dependencies[] = commerce_tax_services
